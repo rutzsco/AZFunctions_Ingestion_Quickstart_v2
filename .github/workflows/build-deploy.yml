@@ -36,7 +36,7 @@ jobs:
 
       - name: Set image name for other jobs
         id: set_env
-        run: echo "::set-output name=image_name::rutzscolabcr.azurecr.io/ingestion-functions:${{ steps.date.outputs.tag }}
+        run: echo "::set-output name=image_name::rutzscolabcr.azurecr.io/ingestion-functions:${{ steps.date.outputs.tag }}"
 
   deploy:
     needs: build
