@@ -34,13 +34,13 @@ jobs:
         with:
           context: .
           push: true
-          tags: rutzscolabcr.azurecr.io/rutzsco-chat-copilot/ingestion-functions:${{ steps.date.outputs.tag }}
+          tags: rutzscolabcr.azurecr.io/custom-chat-copilot/ingestion-functions:${{ steps.date.outputs.tag }}
 
       - name: Set image name for other jobs
         id: image-name
         run: |
           echo "IMAGE_VERSION=${{ steps.date.outputs.tag }}" >> $GITHUB_OUTPUT
-          echo "IMAGE_NAME=rutzscolabcr.azurecr.io/rutzsco-chat-copilot/ingestion-functions" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=rutzscolabcr.azurecr.io/custom-chat-copilot/ingestion-functions" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build
@@ -60,4 +60,4 @@ jobs:
         
       - name: Deploy to server       
         run: |
-         az functionapp create --name ingestionservice --storage-account rutzscochatcopilotdfunsa --environment rutzsco-chat-copilot-demo --resource-group rutzsco-chat-copilot-demo --functions-version 4 --runtime python --image "rutzscolabcr.azurecr.io/rutzsco-chat-copilot/ingestion-functions:$IMAGE_VERSION"
+         az functionapp create --name ingestionservice --storage-account rutzscochatcopilotdfunsa --environment rutzsco-chat-copilot-demo --resource-group rutzsco-chat-copilot-demo --functions-version 4 --runtime python --image "rutzscolabcr.azurecr.io/custom-chat-copilot/ingestion-functions:$IMAGE_VERSION"
