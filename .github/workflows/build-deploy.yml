@@ -8,7 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    outputs:
+      image-name: ${{ steps.image-name.outputs.IMAGE_NAME }}
+      
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -41,12 +43,18 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
+    env:
+      IMAGE_NAME: ${{ needs.build.outputs.image-name }}
     steps:
       - uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy to server
+      - name: ECHO VARIABLES
         run: |
-         az functionapp create --name ingestionservice --storage-account rutzscochatcopilotdfunsa --environment rutzsco-chat-copilot-demo --resource-group rutzsco-chat-copilot-demo --functions-version 4 --runtime python --image ${{ needs.build.outputs.image_name }}"
+          echo "IMAGE_NAME_V2 = $IMAGE_NAME_V2"
+          echo "IMAGE_NAME = $IMAGE_NAME"
+        
+      - name: Deploy to server       
+        run: |
+         az functionapp create --name ingestionservice --storage-account rutzscochatcopilotdfunsa --environment rutzsco-chat-copilot-demo --resource-group rutzsco-chat-copilot-demo --functions-version 4 --runtime python --image "$IMAGE_NAME"
