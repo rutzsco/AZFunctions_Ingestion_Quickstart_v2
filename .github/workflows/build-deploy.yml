@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image-name: ${{ steps.image-name.outputs.IMAGE_NAME }}
-      image-name-v2: ${{ steps.image-name.outputs.IMAGE_NAME_V2 }}
+      image-version: ${{ steps.image-name.outputs.IMAGE_VERSION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -39,15 +39,15 @@ jobs:
       - name: Set image name for other jobs
         id: image-name
         run: |
-          echo "IMAGE_NAME=rutzscolabcr.azurecr.io/rutzsco-chat-copilot/ingestion-functions:${{ steps.date.outputs.tag }}" >> $GITHUB_OUTPUT
-          echo "IMAGE_NAME=RUTZSCO" >> $GITHUB_OUTPUT
+          echo "IMAGE_VERSION=${{ steps.date.outputs.tag }}" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=rutzscolabcr.azurecr.io/rutzsco-chat-copilot/ingestion-functions" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ${{ needs.build.outputs.image-name }}
-      IMAGE_NAME_V2: ${{ needs.build.outputs.image-name-v2 }}
+      IMAGE_VERSION: ${{ needs.build.outputs.image-version }}
     steps:
       - uses: azure/login@v1
         with:
@@ -55,9 +55,9 @@ jobs:
 
       - name: ECHO VARIABLES
         run: |
-          echo "IMAGE_NAME_V2 = $IMAGE_NAME_V2"
           echo "IMAGE_NAME = $IMAGE_NAME"
+          echo "IMAGE_VERSION = $IMAGE_VERSION"
         
       - name: Deploy to server       
         run: |
-         az functionapp create --name ingestionservice --storage-account rutzscochatcopilotdfunsa --environment rutzsco-chat-copilot-demo --resource-group rutzsco-chat-copilot-demo --functions-version 4 --runtime python --image "$IMAGE_NAME"
+         az functionapp create --name ingestionservice --storage-account rutzscochatcopilotdfunsa --environment rutzsco-chat-copilot-demo --resource-group rutzsco-chat-copilot-demo --functions-version 4 --runtime python --image "rutzscolabcr.azurecr.io/rutzsco-chat-copilot/ingestion-functions:$IMAGE_VERSION"
