@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image-name: ${{ steps.image-name.outputs.IMAGE_NAME }}
-      
+      image-name-v2: ${{ steps.image-name.outputs.IMAGE_NAME_V2 }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -34,17 +34,20 @@ jobs:
         with:
           context: .
           push: true
-          tags: rutzscolabcr.azurecr.io/ingestion-functions:${{ steps.date.outputs.tag }}
+          tags: rutzscolabcr.azurecr.io/rutzsco-chat-copilot/ingestion-functions:${{ steps.date.outputs.tag }}
 
       - name: Set image name for other jobs
         id: image-name
-        run: echo "IMAGE_NAME=rutzscolabcr.azurecr.io/ingestion-functions:${{ steps.date.outputs.tag }}" >> $GITHUB_OUTPUT
+        run: |
+          echo "IMAGE_NAME=rutzscolabcr.azurecr.io/rutzsco-chat-copilot/ingestion-functions:${{ steps.date.outputs.tag }}" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=RUTZSCO" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ${{ needs.build.outputs.image-name }}
+      IMAGE_NAME_V2: ${{ needs.build.outputs.image-name-v2 }}
     steps:
       - uses: azure/login@v1
         with:
