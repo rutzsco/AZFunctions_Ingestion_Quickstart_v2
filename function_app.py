@@ -639,18 +639,19 @@ def schedule_create_index(createtimer: func.TimerRequest) -> None:
     # Call the function to create a vector index with the specified stem name and fields
     response = create_vector_index(stem_name, fields)
 
-    # Return the response
-    return response
+    # Log Completion
+    logging.info('Running schedule_create_index - COMPLETED')
 
 @app.function_name(name="schedule_delete_index")
 @app.schedule(schedule="0 0 12/12 * * *", arg_name="deletetimer", run_on_startup=True) 
 def schedule_delete_index(deletetimer: func.TimerRequest) -> None:
+    logging.info('Running schedule_delete_index - STARTED')
     # Extract the index stem name and fields from the payload
     stem_name = 'rag-index'
     deleted_indexes = delete_indexes(stem_name, 60*24)
     
-    # Return the response
-    return deleted_indexes
+    # Log Completion
+    logging.info('Running schedule_delete_index - COMPLETED')
 
 @app.activity_trigger(input_name="activitypayload")
 def update_status_record(activitypayload: str):
