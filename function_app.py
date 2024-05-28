@@ -625,9 +625,9 @@ def get_active_index(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.function_name(name="schedule_create_index")
-@app.schedule(schedule="0 0 12/12 * * *", arg_name="createtimer", run_on_startup=True,
-              use_monitor=False) 
+@app.schedule(schedule="0 0 12/12 * * *", arg_name="createtimer", run_on_startup=True) 
 def schedule_create_index(createtimer: func.TimerRequest) -> None:
+    logging.info('Running schedule_create_index - STARTED')
     # Extract the index stem name and fields from the payload
     stem_name = 'rag-index'
    
@@ -643,8 +643,7 @@ def schedule_create_index(createtimer: func.TimerRequest) -> None:
     return response
 
 @app.function_name(name="schedule_delete_index")
-@app.schedule(schedule="0 0 12/12 * * *", arg_name="deletetimer", run_on_startup=True,
-              use_monitor=False) 
+@app.schedule(schedule="0 0 12/12 * * *", arg_name="deletetimer", run_on_startup=True) 
 def schedule_delete_index(deletetimer: func.TimerRequest) -> None:
     # Extract the index stem name and fields from the payload
     stem_name = 'rag-index'
