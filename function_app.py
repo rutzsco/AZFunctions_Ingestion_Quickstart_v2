@@ -639,6 +639,9 @@ def schedule_create_index(createtimer: func.TimerRequest) -> None:
     # Call the function to create a vector index with the specified stem name and fields
     response = create_vector_index(stem_name, fields)
 
+    # Delete expired index's
+    delete_indexes(stem_name, 60*24)
+    
     # Log Completion
     logging.info('Running schedule_create_index - COMPLETED')
 
