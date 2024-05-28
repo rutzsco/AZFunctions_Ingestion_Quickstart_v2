@@ -141,8 +141,7 @@ In addition to orchestrators and activities, the project includes standalone fun
 
 ### Standalone Functions (Scheduled Execution)
 In addition to orchestrators and activities, the project includes standalone functions which execution on a timer. You can optionally update these functions to run on a different schedule (more or less frequently):
-- `schedule_create_index`: Timer-executed function which creates a new index with a provided root name & predefined schema every X hours.
-- `schedule_delete_index`: Timer-executed function which deletes indexes with a provided root name that are older than a user specified number of hours.
+- `schedule_index_maintenance`: Timer-executed function which creates a new index with a provided root name & predefined schema every X hours and deletes indexes with a provided root name that are older than a user specified number of hours.
 
 
 ---
