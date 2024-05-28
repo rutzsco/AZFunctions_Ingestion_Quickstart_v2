@@ -624,9 +624,9 @@ def get_active_index(req: func.HttpRequest) -> func.HttpResponse:
     return latest_index
 
 
-@app.function_name(name="schedule_create_index")
+@app.function_name(name="schedule_index_maintenance")
 @app.schedule(schedule="0 0 12/12 * * *", arg_name="createtimer", run_on_startup=True) 
-def schedule_create_index(createtimer: func.TimerRequest) -> None:
+def schedule_index_maintenance(createtimer: func.TimerRequest) -> None:
     logging.info('Running schedule_create_index - STARTED')
     # Extract the index stem name and fields from the payload
     stem_name = 'rag-index'
@@ -637,7 +637,7 @@ def schedule_create_index(createtimer: func.TimerRequest) -> None:
     }
 
     # Call the function to create a vector index with the specified stem name and fields
-    response = create_vector_index(stem_name, fields)
+    create_vector_index(stem_name, fields)
 
     # Delete expired index's
     delete_indexes(stem_name, 60*24)
@@ -645,16 +645,6 @@ def schedule_create_index(createtimer: func.TimerRequest) -> None:
     # Log Completion
     logging.info('Running schedule_create_index - COMPLETED')
 
-@app.function_name(name="schedule_delete_index")
-@app.schedule(schedule="0 0 12/12 * * *", arg_name="deletetimer", run_on_startup=True) 
-def schedule_delete_index(deletetimer: func.TimerRequest) -> None:
-    logging.info('Running schedule_delete_index - STARTED')
-    # Extract the index stem name and fields from the payload
-    stem_name = 'rag-index'
-    # deleted_indexes = delete_indexes(stem_name, 60*24)
-    
-    # Log Completion
-    logging.info('Running schedule_delete_index - COMPLETED')
 
 @app.activity_trigger(input_name="activitypayload")
 def update_status_record(activitypayload: str):
