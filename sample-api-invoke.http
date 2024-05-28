@@ -1,0 +1,36 @@
+@FUNCTION_URL =  <FUNCTION_URL>
+@FUNCTION_KEY =  <FUNCTION_KEY>
+
+
+### Crate a new index
+POST {{FUNCTION_URL}}/api/create_new_index?code={{FUNCTION_KEY}}
+Content-Type: application/json
+
+{
+    "index_stem_name": "manuals-auto-ci",
+    "fields": {"content": "string", "pagenumber": "int", "sourcefile": "string", "sourcepage": "string"}
+}
+
+
+### Crate a new index
+GET {{FUNCTION_URL}}/api/get_active_index?code={{FUNCTION_KEY}}
+Content-Type: application/json
+
+{
+    "index_stem_name":"manuals-auto-ci"
+}
+
+### Trigger Ingestion
+POST  {{FUNCTION_URL}}/api/orchestrators/pdf_orchestrator?code={{FUNCTION_KEY}}
+
+{
+    "source_container": "manuals-auto",
+    "extract_container": "manuals-auto-extract",
+    "prefix_path": "",
+    "entra_id": "LocalDevUser",
+    "session_id": "NA",
+    "index_stem_name": "manuals-auto-ci",
+    "index_name": "manuals-auto-ci-20240528182950",
+    "cosmos_record_id": "8afa82c9-7ec6-41f8-b7b8-95a2b8cdf306",
+    "automatically_delete": false
+}
