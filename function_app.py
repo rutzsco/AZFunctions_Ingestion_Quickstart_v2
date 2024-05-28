@@ -648,7 +648,7 @@ def schedule_delete_index(deletetimer: func.TimerRequest) -> None:
     logging.info('Running schedule_delete_index - STARTED')
     # Extract the index stem name and fields from the payload
     stem_name = 'rag-index'
-    deleted_indexes = delete_indexes(stem_name, 60*24)
+    # deleted_indexes = delete_indexes(stem_name, 60*24)
     
     # Log Completion
     logging.info('Running schedule_delete_index - COMPLETED')
