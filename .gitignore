@@ -163,5 +163,4 @@ cython_debug/
 
 local.settings.json
 
-.vscode/
-tests.local.http
+scratch.ipynb
