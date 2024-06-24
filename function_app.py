@@ -12,6 +12,7 @@ import tempfile
 import re
 import requests
 from datetime import datetime
+import magic
 
 from doc_intelligence_utilities import analyze_pdf, extract_results
 from aoai_utilities import generate_embeddings, get_transcription
@@ -34,6 +35,10 @@ async def http_start(req: func.HttpRequest, client):
 # Orchestrators
 @app.orchestration_trigger(context_name="context")
 def pdf_orchestrator(context):
+
+    first_retry_interval_in_milliseconds = 5000
+    max_number_of_attempts = 2
+    retry_options = df.RetryOptions(first_retry_interval_in_milliseconds, max_number_of_attempts)
 
     ###################### DATA INGESTION START ######################
     
@@ -76,7 +81,7 @@ def pdf_orchestrator(context):
 
     # Confirm that all storage locations exist to support document ingestion
     try:
-        container_check = yield context.call_activity("check_containers", json.dumps({'source_container': source_container}))
+        container_check = yield context.call_activity_with_retry("check_containers", retry_options, json.dumps({'source_container': source_container}))
         context.set_custom_status('Document Processing Containers Checked')
         
     except Exception as e:
@@ -86,6 +91,7 @@ def pdf_orchestrator(context):
         status_record['error_message'] = str(e)
         status_record['processing_progress'] = 0.0
         yield context.call_activity("update_status_record", json.dumps(status_record))
+        logging.error(e)
         raise e
 
     # Initialize lists to store parent and extracted files
@@ -94,7 +100,7 @@ def pdf_orchestrator(context):
     
      # Get the list of files in the source container
     try:
-        files = yield context.call_activity("get_source_files", json.dumps({'source_container': source_container, 'extension': '.pdf', 'prefix': prefix_path}))
+        files = yield context.call_activity_with_retry("get_source_files", retry_options, json.dumps({'source_container': source_container, 'extension': '.pdf', 'prefix': prefix_path}))
         context.set_custom_status('Retrieved Source Files')
     except Exception as e:
         context.set_custom_status('Ingestion Failed During File Retrieval')
@@ -103,6 +109,7 @@ def pdf_orchestrator(context):
         status_record['error_message'] = str(e)
         status_record['processing_progress'] = 0.0
         yield context.call_activity("update_status_record", json.dumps(status_record))
+        logging.error(e)
         raise e
 
 
@@ -113,7 +120,7 @@ def pdf_orchestrator(context):
             # Append the file to the parent_files list
             parent_files.append(file)
             # Create a task to split the PDF file and append it to the split_pdf_tasks list
-            split_pdf_tasks.append(context.call_activity("split_pdf_files", json.dumps({'source_container': source_container, 'chunks_container': chunks_container, 'file': file})))
+            split_pdf_tasks.append(context.call_activity_with_retry("split_pdf_files", retry_options, json.dumps({'source_container': source_container, 'chunks_container': chunks_container, 'file': file})))
         # Execute all the split PDF tasks and get the results
         split_pdf_files = yield context.task_all(split_pdf_tasks)
         # Flatten the list of split PDF files
@@ -126,9 +133,13 @@ def pdf_orchestrator(context):
         context.set_custom_status('Ingestion Failed During PDF Chunking')
         status_record['status'] = -1
         status_record['status_message'] = 'Ingestion Failed During PDF Chunking'
+        # Custom logic for incorrect file type
+        if 'not of type PDF' in str(e):
+            status_record['status_message'] = 'Ingestion Failed During PDF Chunking: Non-PDF File Type Detected'
         status_record['error_message'] = str(e)
         status_record['processing_progress'] = 0.0
         yield context.call_activity("update_status_record", json.dumps(status_record))
+        logging.error(e)
         raise e
 
     context.set_custom_status('PDF Chunking Completed')
@@ -155,6 +166,7 @@ def pdf_orchestrator(context):
         status_record['error_message'] = str(e)
         status_record['processing_progress'] = 0.0
         yield context.call_activity("update_status_record", json.dumps(status_record))
+        logging.error(e)
         raise e
 
     context.set_custom_status('Document Extraction Completion')
@@ -179,6 +191,7 @@ def pdf_orchestrator(context):
         status_record['error_message'] = str(e)
         status_record['processing_progress'] = 0.0
         yield context.call_activity("update_status_record", json.dumps(status_record))
+        logging.error(e)
         raise e
 
     context.set_custom_status('Vectorization Completed')
@@ -196,7 +209,7 @@ def pdf_orchestrator(context):
         prefix_path = prefix_path.split('.')[0]
 
         # Get the list of files in the source container
-        files = yield context.call_activity("get_source_files", json.dumps({'source_container': extract_container, 'extension': '.json', 'prefix': prefix_path}))
+        files = yield context.call_activity_with_retry("get_source_files", retry_options, json.dumps({'source_container': extract_container, 'extension': '.json', 'prefix': prefix_path}))
 
         # Get the current index and its fields
         latest_index, fields = get_current_index(index_stem_name)
@@ -214,6 +227,7 @@ def pdf_orchestrator(context):
         status_record['error_message'] = str(e)
         status_record['processing_progress'] = 0.0
         yield context.call_activity("update_status_record", json.dumps(status_record))
+        logging.error(e)
         raise e
 
     # Initialize list to store tasks for inserting records
@@ -221,7 +235,7 @@ def pdf_orchestrator(context):
         insert_tasks = []
         for file in files:
             # Create a task to insert a record for the file and append it to the insert_tasks list
-            insert_tasks.append(context.call_activity("insert_record", json.dumps({'file': file, 'index': latest_index, 'fields': fields, 'extracts-container': extract_container, 'session_id': session_id, 'entra_id': entra_id})))
+            insert_tasks.append(context.call_activity_with_retry("insert_record", retry_options, json.dumps({'file': file, 'index': latest_index, 'fields': fields, 'extracts-container': extract_container, 'session_id': session_id, 'entra_id': entra_id})))
         # Execute all the insert record tasks and get the results
         insert_results = yield context.task_all(insert_tasks)
     except Exception as e:
@@ -231,6 +245,7 @@ def pdf_orchestrator(context):
         status_record['error_message'] = str(e)
         status_record['processing_progress'] = 0.0
         yield context.call_activity("update_status_record", json.dumps(status_record))
+        logging.error(e)
         raise e
     
     context.set_custom_status('Indexing Completed')
@@ -246,10 +261,10 @@ def pdf_orchestrator(context):
     if automatically_delete:
 
         try:
-            source_files = yield context.call_activity("delete_source_files", json.dumps({'source_container': source_container,  'prefix': prefix_path}))
-            chunk_files = yield context.call_activity("delete_source_files", json.dumps({'source_container': chunks_container,  'prefix': prefix_path}))
-            doc_intel_result_files = yield context.call_activity("delete_source_files", json.dumps({'source_container': doc_intel_results_container,  'prefix': prefix_path}))
-            extract_files = yield context.call_activity("delete_source_files", json.dumps({'source_container': extract_container,  'prefix': prefix_path}))
+            source_files = yield context.call_activity_with_retry("delete_source_files", retry_options, json.dumps({'source_container': source_container,  'prefix': prefix_path}))
+            chunk_files = yield context.call_activity_with_retry("delete_source_files", retry_options, json.dumps({'source_container': chunks_container,  'prefix': prefix_path}))
+            doc_intel_result_files = yield context.call_activity_with_retry("delete_source_files", retry_options, json.dumps({'source_container': doc_intel_results_container,  'prefix': prefix_path}))
+            extract_files = yield context.call_activity_with_retry("delete_source_files", retry_options, json.dumps({'source_container': extract_container,  'prefix': prefix_path}))
 
             context.set_custom_status('Ingestion & Clean Up Completed')
             status_record['cleanup_status_message'] = 'Intermediate Data Clean Up Completed'
@@ -262,6 +277,7 @@ def pdf_orchestrator(context):
             status_record['cleanup_status_message'] = 'Intermediate Data Clean Up Failed'
             status_record['cleanup_error_message'] = str(e)
             yield context.call_activity("update_status_record", json.dumps(status_record))
+            logging.error(e)
             raise e
 
     ###################### INTERMEDIATE DATA DELETION END ######################
@@ -449,8 +465,17 @@ def split_pdf_files(activitypayload: str):
     # If the PDF file exists
     if  pdf_blob_client.exists():
 
+        blob_data = pdf_blob_client.download_blob().readall()
+
+        file_type = magic.Magic(mime=True)
+
+        detected_file_type = file_type.from_buffer(blob_data)
+
+        if detected_file_type != 'application/pdf':
+            raise Exception(f'{file} is not of type PDF. Detected MIME type: {detected_file_type}')
+
         # Create a PdfReader object for the PDF file
-        pdf_reader = PdfReader(BytesIO(pdf_blob_client.download_blob().readall()))
+        pdf_reader = PdfReader(BytesIO(blob_data))
 
         # Get the number of pages in the PDF file
         num_pages = len(pdf_reader.pages)
