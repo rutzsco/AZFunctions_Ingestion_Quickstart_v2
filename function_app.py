@@ -12,7 +12,8 @@ import tempfile
 import re
 import requests
 from datetime import datetime
-import magic
+import filetype
+import time
 
 from doc_intelligence_utilities import analyze_pdf, extract_results
 from aoai_utilities import generate_embeddings, get_transcription
@@ -467,12 +468,10 @@ def split_pdf_files(activitypayload: str):
 
         blob_data = pdf_blob_client.download_blob().readall()
 
-        file_type = magic.Magic(mime=True)
+        kind = filetype.guess(blob_data)
 
-        detected_file_type = file_type.from_buffer(blob_data)
-
-        if detected_file_type != 'application/pdf':
-            raise Exception(f'{file} is not of type PDF. Detected MIME type: {detected_file_type}')
+        if kind.EXTENSION != 'pdf':
+            raise Exception(f'{file} is not of type PDF. Detected MIME type: {kind.EXTENSION}')
 
         # Create a PdfReader object for the PDF file
         pdf_reader = PdfReader(BytesIO(blob_data))
@@ -758,26 +757,54 @@ def get_active_index(req: func.HttpRequest) -> func.HttpResponse:
     return latest_index
 
 
-@app.function_name(name="schedule_index_maintenance")
-@app.schedule(schedule="0 0 12/12 * * *", arg_name="createtimer", run_on_startup=True) 
-def schedule_index_maintenance(createtimer: func.TimerRequest) -> None:
-    logging.info('Running schedule_create_index - STARTED')
+@app.function_name(name="schedule_create_index")
+@app.schedule(schedule="0 0 12/12 * * *", arg_name="createtimer", run_on_startup=False,
+              use_monitor=False) 
+def schedule_create_index(createtimer: func.TimerRequest) -> None:
     # Extract the index stem name and fields from the payload
     stem_name = 'rag-index'
    
     fields = {
-        "content": "string", "pagenumber": "int", "sourcefile": "string", "sourcepage": "string", "category": "string",
+        "content": "string", "pagenumber": "int", "sourcefile": "string", 
+        "sourcepage": "string", "category": "string",
         "entra_id": "string", "session_id": "string"
     }
 
-    # Call the function to create a vector index with the specified stem name and fields
-    create_vector_index(stem_name, fields)
+    max_retries = 3
+    attempts = 0
 
-    # Delete expired index's
-    delete_indexes(stem_name, 60*24)
+    while attempts < max_retries:
+        try:
+            response = create_vector_index(stem_name, fields)
+            break
+        except Exception as e:
+            print(f"Create Index - Attempt {attempts+1} failed: {e}")
+            time.sleep(10)
+            attempts += 1
+            if attempts == max_retries:
+                logging.error(e)
+
+
+@app.function_name(name="schedule_delete_index")
+@app.schedule(schedule="0 0 12/12 * * *", arg_name="deletetimer", run_on_startup=False,
+              use_monitor=False) 
+def schedule_delete_index(deletetimer: func.TimerRequest) -> None:
+    # Extract the index stem name and fields from the payload
+    stem_name = 'rag-index'
     
-    # Log Completion
-    logging.info('Running schedule_create_index - COMPLETED')
+    max_retries = 3
+    attempts = 0
+
+    while attempts < max_retries:
+        try:
+            deleted_indexes = delete_indexes(stem_name, 60*24)
+            break
+        except Exception as e:
+            print(f"Delete Indexes - Attempt {attempts+1} failed: {e}")
+            time.sleep(10)
+            attempts += 1
+            if attempts == max_retries:
+                logging.error(e)
 
 
 @app.activity_trigger(input_name="activitypayload")
