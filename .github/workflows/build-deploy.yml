@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image-name: ${{ steps.image-name.outputs.IMAGE_NAME }}
-      image-version: ${{ steps.image-name.outputs.IMAGE_VERSION }}
+      image-version: ${{ steps.image-version.outputs.IMAGE_VERSION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
