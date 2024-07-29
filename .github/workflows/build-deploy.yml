@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image-name: ${{ steps.image-name.outputs.IMAGE_NAME }}
+      image-name-v2: ${{ steps.image-name.outputs.IMAGE_NAME_V2 }}
       image-version: ${{ steps.image-version.outputs.IMAGE_VERSION }}
     env:
       IMAGE_NAME: rutzscolabcr.azurecr.io/custom-chat-copilot/ingestion-functions
+      IMAGE_NAME_V2: TEST
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -43,7 +45,7 @@ jobs:
         run: |
           echo "IMAGE_NAME = $IMAGE_NAME"
           echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" >> "$GITHUB_OUTPUT"
-        
+          echo "IMAGE_NAME_V2=${{ env.IMAGE_NAME_V2 }}" >> "$GITHUB_OUTPUT"
       - name: Set image version for other jobs
         id: image-version
         run: echo "IMAGE_VERSION=${{ steps.date.outputs.tag }}" >> "$GITHUB_OUTPUT"
@@ -53,6 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ${{ needs.build.outputs.image-name }}
+      IMAGE_NAME_V2: ${{ needs.build.outputs.image-name-v2 }}
       IMAGE_VERSION: ${{ needs.build.outputs.image-version }}
     steps:
       - uses: azure/login@v1
@@ -62,6 +65,7 @@ jobs:
       - name: ECHO VARIABLES
         run: |
           echo "IMAGE_NAME = $IMAGE_NAME"
+          echo "IMAGE_NAME_V2 = $IMAGE_NAME_V2"
           echo "IMAGE_VERSION = $IMAGE_VERSION"
         
       - name: Deploy to server       
