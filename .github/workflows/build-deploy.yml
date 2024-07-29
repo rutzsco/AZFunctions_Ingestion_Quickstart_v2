@@ -43,9 +43,10 @@ jobs:
       - name: Set image name for other jobs
         id: image-name
         run: |
-          echo "IMAGE_NAME = $IMAGE_NAME"
           echo 'IMAGE_NAME=${{ env.IMAGE_NAME }}' >> $GITHUB_OUTPUT
           echo "IMAGE_NAME_V2=${{ env.IMAGE_NAME_V2 }}" >> $GITHUB_OUTPUT
+          echo "::set-output name=IMAGE_NAME::${{ env.IMAGE_NAME }}"
+          echo "::set-output name=IMAGE_NAME_V2::${{ env.IMAGE_NAME_V2 }}"
       - name: Set image version for other jobs
         id: image-version
         run: echo "IMAGE_VERSION=${{ steps.date.outputs.tag }}" >> $GITHUB_OUTPUT
