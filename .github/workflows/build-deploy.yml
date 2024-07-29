@@ -38,7 +38,9 @@ jobs:
 
       - name: Set image name for other jobs
         id: image-name
-        run: echo "IMAGE_NAME=TEST" >> "$GITHUB_OUTPUT"
+        run: |
+          export IMAGE_NAME="rutzscolabcr.azurecr.io/custom-chat-copilot/ingestion-functions"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
         
       - name: Set image version for other jobs
         id: image-version
