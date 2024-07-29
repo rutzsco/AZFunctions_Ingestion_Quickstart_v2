@@ -38,7 +38,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGE_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.date.outputs.tag }}
+          tags: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.date.outputs.tag }}
 
       - name: Set image name for other jobs
         id: image-name
