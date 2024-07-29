@@ -36,12 +36,11 @@ jobs:
         with:
           context: .
           push: true
-          tags: rutzscolabcr.azurecr.io/custom-chat-copilot/ingestion-functions:${{ steps.date.outputs.tag }}
+          tags: $IMAGE_NAME:${{ steps.date.outputs.tag }}
 
       - name: Set image name for other jobs
         id: image-name
         run: |
-          export IMAGE_NAME="rutzscolabcr.azurecr.io/custom-chat-copilot/ingestion-functions"
           echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
         
       - name: Set image version for other jobs
