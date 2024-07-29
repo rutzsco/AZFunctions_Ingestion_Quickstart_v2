@@ -9,11 +9,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      image-server: ${{ steps.image-name.outputs.IMAGE_SERVER }}
+      image-registry: ${{ steps.image-name.outputs.IMAGE_REGISTRY }}
       image-name: ${{ steps.image-name.outputs.IMAGE_NAME }}
       image-version: ${{ steps.image-version.outputs.IMAGE_VERSION }}
     env:
-      IMAGE_SERVER: rutzscolabcr.azurecr.io
+      IMAGE_REGISTRY: rutzscolabcr.azurecr.io
       IMAGE_NAME: custom-chat-copilot/ingestion-functions
     steps:
       - name: Checkout code
@@ -25,7 +25,7 @@ jobs:
       - name: Log in to ACR
         uses: docker/login-action@v1
         with:
-          registry: rutzscolabcr.azurecr.io
+          registry: ${{ secrets.IMAGE_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           
@@ -43,7 +43,7 @@ jobs:
       - name: Set image name for other jobs
         id: image-name
         run: |
-          echo 'IMAGE_SERVER=${{ env.IMAGE_SERVER }}' >> $GITHUB_OUTPUT
+          echo "IMAGE_REGISTRY=${{ env.IMAGE_REGISTRY }}" >> $GITHUB_OUTPUT
           echo "IMAGE_NAME=${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
           
       - name: Set image version for other jobs
@@ -54,7 +54,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      IMAGE_SERVER: ${{ needs.build.outputs.image-server }}
+      IMAGE_REGISTRY: ${{ needs.build.outputs.image-registry }}
       IMAGE_NAME: ${{ needs.build.outputs.image-name }}
       IMAGE_VERSION: ${{ needs.build.outputs.image-version }}
     steps:
@@ -64,7 +64,7 @@ jobs:
 
       - name: ECHO VARIABLES
         run: |
-          echo "IMAGE_SERVER = $IMAGE_SERVER"
+          echo "IMAGE_REGISTRY = $IMAGE_REGISTRY"
           echo "IMAGE_NAME = $IMAGE_NAME"
           echo "IMAGE_VERSION = $IMAGE_VERSION"
         
